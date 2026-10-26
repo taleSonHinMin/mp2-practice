@@ -8,6 +8,9 @@
 #define __TDynamicMatrix_H__
 
 #include <iostream>
+#include <iomanip>
+#include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -324,25 +327,70 @@ public:
   // матрично-матричные операции
   TDynamicMatrix operator+(const TDynamicMatrix& m)
   {
-      throw "Method is not implemented";
+      if (this->sz != m.sz) throw invalid_argument("size of matrices must be equal");
+      TDynamicMatrix<T> res(m.sz);
+      for (size_t i = 0;i < this->sz;i++) {
+          for (size_t j = 0;j < this->sz;j++) {
+              res[i][j] = m[i][j] + this->pMem[i][j];
+          }
+      }
+      return res;
   }
   TDynamicMatrix operator-(const TDynamicMatrix& m)
   {
-      throw "Method is not implemented";
+      if (m.sz != this->sz) throw invalid_argument("size of matrices must be equal");
+      TDynamicMatrix<T> res(m.sz);
+      for (size_t i = 0;i < this->sz;i++) {
+          for (size_t j = 0;j < this->sz;j++) {
+              res[i][j] = this->pMem[i][j] - m[i][j];
+          }
+      }
+      return res;
   }
   TDynamicMatrix operator*(const TDynamicMatrix& m)
   {
-      throw "Method is not implemented";
+      if (m.sz != this->sz) throw invalid_argument("size of matrices must be equal");
+      TDynamicMatrix<T> res(m.sz);
+      T sum;
+      for (size_t i = 0; i < this->sz; i++) {
+          for (size_t j = 0; j < this->sz; j++) {
+              sum = T{};
+              for (size_t k = 0; k < this->sz; k++) {
+                  sum += this->pMem[i][k] * m[k][j];
+              }
+              res[i][j] = sum;
+          }
+      }
+      return res;
   }
 
   // ввод/вывод
   friend istream& operator>>(istream& istr, TDynamicMatrix& v)
   {
-      throw "Method is not implemented";
+      for (size_t i = 0; i < v.size(); i++) {
+          for (size_t j = 0; j < v.size(); j++) {
+              istr >> v[i][j];
+          }
+      }
+      return istr;
   }
   friend ostream& operator<<(ostream& ostr, const TDynamicMatrix& v)
   {
-      throw "Method is not implemented";
+      size_t max_len= 1;
+      for (size_t i = 0; i < v.size(); i++) {
+          for (size_t j = 0; j < v.size(); j++) {
+              size_t len = to_string(v[i][j]).length();
+              if (len > max_len) max_len = len;
+          }
+      }
+
+      for (size_t i = 0; i < v.size(); i++) {
+          for (size_t j = 0; j < v.size(); j++) {
+              ostr << setw((int)max_len) << v[i][j] << ' ';
+          }
+          ostr << '\n';
+      }
+      return ostr;
   }
 };
 
