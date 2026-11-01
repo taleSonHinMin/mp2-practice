@@ -95,10 +95,16 @@ public:
   // индексация
   T& operator[](size_t ind)
   {
+      if (ind >= this->sz) {
+          throw out_of_range("Index out of range");
+      }
       return this->pMem[ind];
   }
   const T& operator[](size_t ind) const
   {
+      if (ind >= this->sz) {
+          throw out_of_range("Index out of range");
+      }
       return this->pMem[ind];
   }
   // индексация с контролем
@@ -132,7 +138,7 @@ public:
   }
 
   // скалярные операции
-  TDynamicVector operator+(T val)
+  TDynamicVector operator+(T val) const
   {
       TDynamicVector<T> res(this->sz);
       for (size_t i = 0; i < this->sz; i++) {
@@ -140,15 +146,11 @@ public:
       }
       return res;
   }
-  TDynamicVector operator-(T val)
+  TDynamicVector operator-(T val) const
   {
-      TDynamicVector<T> res(this->sz);
-      for (size_t i = 0; i < this->sz; i++) {
-          res[i] = this->pMem[i] - val;
-      }
-      return res;
+      return (*this) + (val * (-1));
   }
-  TDynamicVector operator*(T val)
+  TDynamicVector operator*(T val) const
   {
       TDynamicVector<T> res(this->sz);
       for (size_t i = 0; i < this->sz; i++) {
@@ -158,7 +160,7 @@ public:
   }
 
   // векторные операции
-  TDynamicVector operator+(const TDynamicVector& v)
+  TDynamicVector operator+(const TDynamicVector& v) const
   {
       if (this->sz != v.size()) throw invalid_argument("The vector sizes must be equal");
 
@@ -168,17 +170,11 @@ public:
       }
       return res;
   }
-  TDynamicVector operator-(const TDynamicVector& v)
+  TDynamicVector operator-(const TDynamicVector& v) const
   {
-      if (this->sz != v.size()) throw invalid_argument("The vector sizes must be equal");
-
-      TDynamicVector<T> res(this->sz);
-      for (size_t i = 0; i < this->sz; i++) {
-          res[i] = this->pMem[i] - v[i];
-      }
-      return res;
+      return (*this) + (v * (-1));
   }
-  T operator*(const TDynamicVector& v) //noexcept(noexcept(T()))
+  T operator*(const TDynamicVector& v) const //noexcept(noexcept(T()))
   {
       if (this->sz != v.sz) throw invalid_argument("The vectors sizes must be equal");
 
@@ -226,14 +222,14 @@ public:
           throw out_of_range("Matrix size should be greater than zero");
       if (s > MAX_MATRIX_SIZE)
           throw out_of_range("Matrix size should be less than or equal to 10000");
-
-    for (size_t i = 0; i < sz; i++)
-      pMem[i] = TDynamicVector<T>(sz);
+      for (size_t i = 0; i < sz; i++) {
+          pMem[i] = TDynamicVector<T>(sz - i);
+      }
   }
   TDynamicMatrix(const TDynamicMatrix& matrix) : TDynamicVector<TDynamicVector<T>>(matrix.size())
   {
       for (size_t i = 0; i < sz; i++) {
-          pMem[i] = matrix[i];
+          this->pMem[i] = matrix[i];
       }
   }
   TDynamicMatrix(TDynamicMatrix&& matrix) : TDynamicVector<TDynamicVector<T>>(move(matrix)) 
@@ -244,21 +240,23 @@ public:
   using TDynamicVector<TDynamicVector<T>>::size;
   
   T& at(size_t i, size_t j) {
-      if (i >= this->sz || j >= this->sz) throw out_of_range("Index out of range");
-      return this->pMem[i][j];
+      if (i >= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
+      return this->pMem[i][j-i];
   }
   const T& at(size_t i, size_t j) const {
-      if (i>= this->sz || j >= this->sz) throw out_of_range("Index out of range");
-      return this->pMem[i][j];
+      if (i>= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
+      return this->pMem[i][j-i];
   }
 
   TDynamicMatrix& operator=(const TDynamicMatrix& matrix) {
       if (this == &matrix) return *this;
- 
-      delete[] this->pMem;
-      
-      this->sz = matrix.sz;
-      this->pMem = new TDynamicVector<T>[this->sz];
+
+      if (this->sz != matrix.sz) {
+          delete[] this->pMem;
+          this->sz = matrix.sz;
+          this->pMem = new TDynamicVector<T>[this->sz];
+      }
+
       for (size_t i = 0; i < this->sz; i++) {
           this->pMem[i] = matrix[i];
       }
@@ -296,9 +294,9 @@ public:
   }
 
   // матрично-скалярные операции
-  TDynamicMatrix operator*(const T& val)
+  TDynamicMatrix<T> operator*(const T& val)
   {
-      TDynamicMatrix<T> res(this->sz);
+      TDynamicMatrix res(this->sz);
       for (size_t i = 0; i < this->sz; i++) {
           res[i] = this->pMem[i] * val;
       }
@@ -307,7 +305,7 @@ public:
   }
 
   // матрично-векторные операции
-  TDynamicVector<T> operator*(const TDynamicVector<T>& v)
+  TDynamicVector<T> operator*(const TDynamicVector<T>& v) const
   {
       if (this->sz != v.size()) {
           throw invalid_argument("Number of columns of matrix must be equal to number of rows of vector");
@@ -316,8 +314,8 @@ public:
       T sum;
       for (size_t i = 0; i < this->sz;i++) {
           sum = T{};
-          for (size_t j = 0; j < this->sz;j++) {
-              sum += this->pMem[i][j] * v[j];
+          for (size_t j = 0; j < this->pMem[i].size();j++) {
+              sum += this->pMem[i][j] * v[j+i];
           }
           res[i] = sum;
       }
@@ -325,42 +323,45 @@ public:
   }
 
   // матрично-матричные операции
-  TDynamicMatrix operator+(const TDynamicMatrix& m)
+  TDynamicMatrix<T> operator+(const TDynamicMatrix& m)
   {
       if (this->sz != m.sz) throw invalid_argument("size of matrices must be equal");
       TDynamicMatrix<T> res(m.sz);
       for (size_t i = 0;i < this->sz;i++) {
-          for (size_t j = 0;j < this->sz;j++) {
-              res[i][j] = m[i][j] + this->pMem[i][j];
-          }
+          res[i] = this->pMem[i] + m[i];
       }
       return res;
   }
-  TDynamicMatrix operator-(const TDynamicMatrix& m)
+  TDynamicMatrix<T> operator-(const TDynamicMatrix& m)
   {
       if (m.sz != this->sz) throw invalid_argument("size of matrices must be equal");
       TDynamicMatrix<T> res(m.sz);
       for (size_t i = 0;i < this->sz;i++) {
-          for (size_t j = 0;j < this->sz;j++) {
-              res[i][j] = this->pMem[i][j] - m[i][j];
-          }
+          res[i] = this->pMem[i] - m[i];
       }
       return res;
   }
-  TDynamicMatrix operator*(const TDynamicMatrix& m)
+  TDynamicMatrix<T> operator*(const TDynamicMatrix& m)
   {
       if (m.sz != this->sz) throw invalid_argument("size of matrices must be equal");
       TDynamicMatrix<T> res(m.sz);
-      T sum;
-      for (size_t i = 0; i < this->sz; i++) {
-          for (size_t j = 0; j < this->sz; j++) {
-              sum = T{};
-              for (size_t k = 0; k < this->sz; k++) {
-                  sum += this->pMem[i][k] * m[k][j];
+      /*for (size_t i = 0; i < sz; i++) {
+          for (size_t j = i; j < sz; j++) {
+              T sum = T{};
+              for (size_t k = i; k <= j; k++)       
+                  sum += at(i, k) * m.at(k, j);
+              res.at(i, j) = sum;
+          }
+      }*/
+
+      for (size_t i = 0; i < sz; i++) {
+          for (size_t j = 0; j < pMem[i].size(); j++) {
+              for (size_t k = 0; k <= j; k++) {
+                  res[i][j] += pMem[i][k] * m.pMem[i + k][j - k];
               }
-              res[i][j] = sum;
           }
       }
+
       return res;
   }
 
@@ -369,7 +370,7 @@ public:
   {
       for (size_t i = 0; i < v.size(); i++) {
           for (size_t j = 0; j < v.size(); j++) {
-              istr >> v[i][j];
+              istr >> v.at(i, j);
           }
       }
       return istr;
@@ -379,14 +380,14 @@ public:
       size_t max_len= 1;
       for (size_t i = 0; i < v.size(); i++) {
           for (size_t j = 0; j < v.size(); j++) {
-              size_t len = to_string(v[i][j]).length();
+              size_t len = to_string(v.at(i, j)).length();
               if (len > max_len) max_len = len;
           }
       }
 
       for (size_t i = 0; i < v.size(); i++) {
           for (size_t j = 0; j < v.size(); j++) {
-              ostr << setw((int)max_len) << v[i][j] << ' ';
+              ostr << setw((int)max_len) << v.at(i,j) << ' ';
           }
           ostr << '\n';
       }
