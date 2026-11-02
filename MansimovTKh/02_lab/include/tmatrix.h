@@ -69,9 +69,11 @@ public:
   TDynamicVector& operator=(const TDynamicVector& v)
   {
       if (this == &v) return *this;
-      this->sz = v.sz;
-      delete[] this->pMem;
-      this->pMem = new T[this->sz];
+      if (this->sz != v.sz) {
+          this->sz = v.sz;
+          delete[] this->pMem;
+          this->pMem = new T[this->sz];
+      }
       for (size_t i = 0; i < this->sz; i++) {
           this->pMem[i] = v.pMem[i];
       }
@@ -239,14 +241,14 @@ public:
   using TDynamicVector<TDynamicVector<T>>::operator[];
   using TDynamicVector<TDynamicVector<T>>::size;
   
-  T& at(size_t i, size_t j) {
+  /*T& at(size_t i, size_t j) {
       if (i >= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
-      return this->pMem[i][j-i];
+      return this->pMem[i][j];
   }
   const T& at(size_t i, size_t j) const {
       if (i>= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
       return this->pMem[i][j-i];
-  }
+  }*/
 
   TDynamicMatrix& operator=(const TDynamicMatrix& matrix) {
       if (this == &matrix) return *this;
@@ -370,7 +372,7 @@ public:
   {
       for (size_t i = 0; i < v.size(); i++) {
           for (size_t j = 0; j < v.size(); j++) {
-              istr >> v.at(i, j);
+              istr >> v[i][j];
           }
       }
       return istr;
@@ -379,15 +381,16 @@ public:
   {
       size_t max_len= 1;
       for (size_t i = 0; i < v.size(); i++) {
-          for (size_t j = 0; j < v.size(); j++) {
-              size_t len = to_string(v.at(i, j)).length();
+          for (size_t j = 0; j < v.size()-i; j++) {
+              size_t len = to_string(v[i][j]).length();
               if (len > max_len) max_len = len;
           }
       }
 
       for (size_t i = 0; i < v.size(); i++) {
           for (size_t j = 0; j < v.size(); j++) {
-              ostr << setw((int)max_len) << v.at(i,j) << ' ';
+              if (j < i) ostr << setw((int)max_len) << 0 << ' ';
+              else ostr << setw((int)max_len) << v[i][j-i] << ' ';
           }
           ostr << '\n';
       }
