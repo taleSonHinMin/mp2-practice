@@ -5,8 +5,7 @@
 //
 
 #ifndef __TDynamicMatrix_H__
-#define __TDynamicMatrix_H__
-
+#define __TDynamicMatrix_H__ 
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -176,7 +175,7 @@ public:
   {
       return (*this) + (v * (-1));
   }
-  T operator*(const TDynamicVector& v) const //noexcept(noexcept(T()))
+  T operator*(const TDynamicVector& v) const 
   {
       if (this->sz != v.sz) throw invalid_argument("The vectors sizes must be equal");
 
@@ -240,15 +239,6 @@ public:
 
   using TDynamicVector<TDynamicVector<T>>::operator[];
   using TDynamicVector<TDynamicVector<T>>::size;
-  
-  /*T& at(size_t i, size_t j) {
-      if (i >= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
-      return this->pMem[i][j];
-  }
-  const T& at(size_t i, size_t j) const {
-      if (i>= this->sz || j >= this->sz || j<i) throw out_of_range("Index out of range");
-      return this->pMem[i][j-i];
-  }*/
 
   TDynamicMatrix& operator=(const TDynamicMatrix& matrix) {
       if (this == &matrix) return *this;
@@ -303,7 +293,7 @@ public:
           res[i] = this->pMem[i] * val;
       }
 
-      return res;
+      return res; 
   }
 
   // матрично-векторные операции
@@ -347,14 +337,6 @@ public:
   {
       if (m.sz != this->sz) throw invalid_argument("size of matrices must be equal");
       TDynamicMatrix<T> res(m.sz);
-      /*for (size_t i = 0; i < sz; i++) {
-          for (size_t j = i; j < sz; j++) {
-              T sum = T{};
-              for (size_t k = i; k <= j; k++)       
-                  sum += at(i, k) * m.at(k, j);
-              res.at(i, j) = sum;
-          }
-      }*/
 
       for (size_t i = 0; i < sz; i++) {
           for (size_t j = 0; j < pMem[i].size(); j++) {
@@ -363,7 +345,6 @@ public:
               }
           }
       }
-
       return res;
   }
 
